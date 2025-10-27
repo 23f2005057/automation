@@ -2,28 +2,54 @@ name: Daily Auto Commit
 
 on:
   schedule:
-    # Runs every day at 10:55 PM IST (17:25 UTC)
-    - cron: '25 17 * * *'
-  workflow_dispatch:  # allows manual trigger too
+    # Runs every day at 11:15 PM IST (17:45 UTC)
+    - cron: '45 17 * * *'
+  workflow_dispatch:  # allows manual trigger
+
+permissions:
+  contents: write  # Explicitly grant write permissions
 
 jobs:
   daily-update:
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Update timestamp (23f2005057@ds.study.iitm.ac.in)
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Fetch full history to avoid issues
+      
+      - name: Update timestamp
         run: |
           echo "Last updated: $(date -u)" > last_update.txt
-
+          echo "Updated by: github-actions[bot]" >> last_update.txt
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git add last_update.txt
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected"
+          fi
+      
       - name: Commit and push changes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "23f2005057@ds.study.iitm.ac.in"
-          git add last_update.txt
-          git commit -m "Automated daily update - $(date -u)" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref }}
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Automated daily update - $(date -u)"
+          git push
+      
+      - name: Report status
+        if: always()
+        run: |
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Successfully committed and pushed changes"
+          else
+            echo "ℹ️ No changes to commit"
+          fi
