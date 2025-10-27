@@ -3,11 +3,11 @@ name: Daily Auto Commit
 on:
   schedule:
     # Runs every day at 11:15 PM IST (17:45 UTC)
-    - cron: '45 17 * * *'
-  workflow_dispatch:  # allows manual trigger
+    - cron: '54 17 * * *'
+  workflow_dispatch:  # Allows manual trigger for testing
 
 permissions:
-  contents: write  # Explicitly grant write permissions
+  contents: write
 
 jobs:
   daily-update:
@@ -18,38 +18,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # Fetch full history to avoid issues
       
-      - name: Update timestamp
+      - name: Update timestamp (23f2005057@ds.study.iitm.ac.in)
         run: |
           echo "Last updated: $(date -u)" > last_update.txt
-          echo "Updated by: github-actions[bot]" >> last_update.txt
-      
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git add last_update.txt
-          if git diff --staged --quiet; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
-          else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Changes detected"
-          fi
+          echo "Workflow run: ${{ github.run_number }}" >> last_update.txt
       
       - name: Commit and push changes
-        if: steps.check_changes.outputs.has_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "23f2005057@ds.study.iitm.ac.in"
+          git add last_update.txt
           git commit -m "Automated daily update - $(date -u)"
           git push
-      
-      - name: Report status
-        if: always()
-        run: |
-          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
-            echo "✅ Successfully committed and pushed changes"
-          else
-            echo "ℹ️ No changes to commit"
-          fi
